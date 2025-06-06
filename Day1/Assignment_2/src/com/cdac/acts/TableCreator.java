@@ -82,8 +82,7 @@ public class TableCreator {
             System.out.print("Select option: ");
 
             int option = scanner.nextInt();
-            scanner.nextLine(); // Consume newline
-
+            scanner.nextLine(); 
             switch (option) {
                 case 1:
                     addColumn(columns);
@@ -116,14 +115,14 @@ public class TableCreator {
         System.out.print("Enter choice: ");
         
         int typeChoice = scanner.nextInt();
-        scanner.nextLine(); // Consume newline
+        scanner.nextLine();  
         
         String dataType;
         switch (typeChoice) {
             case 1:
                 System.out.print("Enter length for VARCHAR (e.g., 50): ");
                 int length = scanner.nextInt();
-                scanner.nextLine(); // Consume newline
+                scanner.nextLine();  
                 dataType = "VARCHAR(" + length + ")";
                 break;
             case 2:
@@ -154,8 +153,7 @@ public class TableCreator {
 
         System.out.print("Enter column number: ");
         int colNum = scanner.nextInt();
-        scanner.nextLine(); // Consume newline
-
+        scanner.nextLine();  
         if (colNum < 1 || colNum > columns.size()) {
             System.out.println("Invalid column number.");
             return null;
@@ -173,17 +171,15 @@ public class TableCreator {
         }
 
         StringBuilder sql = new StringBuilder("CREATE TABLE " + tableName + " (");
-        
-        // Add all columns
+    
         for (Column col : columns) {
             sql.append(col.name).append(" ").append(col.type).append(", ");
         }
-        
-        // Add primary key if specified
+    
         if (primaryKey != null) {
             sql.append("PRIMARY KEY (").append(primaryKey).append(")");
         } else {
-            // Remove trailing comma if no primary key
+             
             sql.setLength(sql.length() - 2);
         }
         
