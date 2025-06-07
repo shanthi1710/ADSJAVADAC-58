@@ -50,13 +50,13 @@ public class UserManagementSystem {
 				}
 				case 5:{
 					running = false;
-					System.out.println("Exiting..."); // ✅ print before exit
-					sc.close(); // ✅ moved before exit
+					System.out.println("Exiting...");  
+					sc.close();  
 					System.exit(0);
 					break;
 				}
 				default:{
-					System.out.println("Invalid choice. Please try again."); // ✅ fixed spacing
+					System.out.println("Invalid choice. Please try again.");  
 				}
 			}
 		}

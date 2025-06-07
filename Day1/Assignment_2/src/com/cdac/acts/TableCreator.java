@@ -1,239 +1,135 @@
-package com.cdac.acts;
-
+package org.assignments.day1;
 
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Properties;
 import java.util.Scanner;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
-public class TableCreator {
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/jdbc";
-    private static final String DB_USER = "root";
-    private static final String DB_PASSWORD = "Pavan@1710";
-    private static Scanner scanner = new Scanner(System.in);
+public class Assignment2 {
 
     public static void main(String[] args) {
- 
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-        } catch (ClassNotFoundException e) {
-            System.err.println("MySQL JDBC Driver not found");
+    	Properties dbProperty = new Properties();
+    	try {
+			dbProperty.load(new FileInputStream("application.properties"));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+    	String dbUrl = dbProperty.getProperty("connection.url");
+    	String dbName = dbProperty.getProperty("connection.name");
+    	String dbPassword = dbProperty.getProperty("connection.password");
+    	
+        try (Scanner sc = new Scanner(System.in);
+             Connection dbConnection = DriverManager.getConnection(dbUrl, dbName, dbPassword)) {
+
+            int choice;
+            do {
+                System.out.println("Menu");
+                System.out.println("1. Create Table");
+                System.out.println("2. Display Columns of Table");
+                System.out.println("3. Exit");
+                System.out.print("Enter your choice: ");
+                choice = sc.nextInt();
+
+                switch (choice) {
+                    case 1:
+                        String createSQL = createTable(sc);
+                        try (PreparedStatement psCreate = dbConnection.prepareStatement(createSQL)) {
+                            psCreate.execute();
+                            System.out.println("Table created successfully!");
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                        }
+                        break;
+
+                    case 2:
+                        System.out.print("Enter table name: ");
+                        String tableName = sc.next();
+                        showTableColumns(dbConnection, tableName);
+                        break;
+
+                    case 3:
+                        System.out.println("Exiting");
+                        break;
+
+                    default:
+                        System.out.println("Invalid choice. Try again.");
+                }
+            } while (choice != 3);
+
+        } catch (SQLException e) {
             e.printStackTrace();
-            return;
         }
-
-        boolean running = true;
-        while (running) {
-            System.out.println("\nDatabase Table Manager");
-            System.out.println("1. Create New Table");
-            System.out.println("2. Display Columns of a Table");
-            System.out.println("3. Exit");
-            System.out.print("Enter your choice: ");
-
-            int choice = scanner.nextInt();
-            scanner.nextLine();  
-
-            switch (choice) {
-                case 1:
-                    createTable();
-                    break;
-                case 2:
-                    displayTableColumns();
-                    break;
-                case 3:
-                    running = false;
-                    System.out.println("Exiting...");
-                    break;
-                default:
-                    System.out.println("Invalid choice. Please try again.");
-            }
-        }
-        scanner.close();
     }
 
-    private static void createTable() {
-        System.out.println("\nCreate New Table");
+    private static String createTable(Scanner sc) {
         System.out.print("Enter table name: ");
-        String tableName = scanner.nextLine();
+        String tableName = sc.next();
+        int choice;
+        ArrayList<String> columnDefs = new ArrayList<>();
+        ArrayList<String> columnNames = new ArrayList<>();
 
-        List<Column> columns = new ArrayList<>();
-        String primaryKey = null;
+        do {
+            System.out.print("Enter column name: ");
+            String col = sc.next();
+            System.out.println("Choose datatype: 1) VARCHAR  2) INT  3) FLOAT");
+            int type = sc.nextInt();
 
-        boolean editing = true;
-        while (editing) {
-            System.out.println("\nTable: " + tableName);
-            System.out.println("Current Columns:");
-            if (columns.isEmpty()) {
-                System.out.println("(No columns defined yet)");
-            } else {
-                for (int i = 0; i < columns.size(); i++) {
-                    Column col = columns.get(i);
-                    System.out.printf("%d. %s %s%s%n", 
-                        i + 1, col.name, col.type, 
-                        (col.name.equals(primaryKey) ? " (PRIMARY KEY)" : ""));
-                }
-            }
+            String dataType;
+            switch (type) {
+            case 1 : dataType = "VARCHAR(255)"; break;
+            case 2 : dataType =  "INT"; break;
+            case 3 : dataType =  "FLOAT"; break;
+            default : dataType =  "VARCHAR(255)";
+        };
 
-            System.out.println("\nOptions:");
-            System.out.println("1. Add Column");
-            System.out.println("2. Set Primary Key");
-            System.out.println("3. Save Table");
-            System.out.println("4. Cancel");
-            System.out.print("Select option: ");
+            columnNames.add(col);
+            columnDefs.add(col + " " + dataType);
 
-            int option = scanner.nextInt();
-            scanner.nextLine(); 
-            switch (option) {
-                case 1:
-                    addColumn(columns);
-                    break;
-                case 2:
-                    primaryKey = setPrimaryKey(columns);
-                    break;
-                case 3:
-                    saveTable(tableName, columns, primaryKey);
-                    editing = false;
-                    break;
-                case 4:
-                    System.out.println("Table creation cancelled.");
-                    editing = false;
-                    break;
-                default:
-                    System.out.println("Invalid option. Please try again.");
-            }
-        }
-    }
+            System.out.print("Add more columns? 1 for yes, 0 for no: ");
+            choice = sc.nextInt();
+        } while (choice != 0);
 
-    private static void addColumn(List<Column> columns) {
-        System.out.print("\nEnter column name: ");
-        String columnName = scanner.nextLine();
-
-        System.out.println("\nSelect data type:");
-        System.out.println("1. VARCHAR (String)");
-        System.out.println("2. INT (Integer)");
-        System.out.println("3. FLOAT (Decimal)");
-        System.out.print("Enter choice: ");
-        
-        int typeChoice = scanner.nextInt();
-        scanner.nextLine();  
-        
-        String dataType;
-        switch (typeChoice) {
-            case 1:
-                System.out.print("Enter length for VARCHAR (e.g., 50): ");
-                int length = scanner.nextInt();
-                scanner.nextLine();  
-                dataType = "VARCHAR(" + length + ")";
-                break;
-            case 2:
-                dataType = "INT";
-                break;
-            case 3:
-                dataType = "FLOAT";
-                break;
-            default:
-                System.out.println("Invalid choice. Using VARCHAR(50) by default.");
-                dataType = "VARCHAR(50)";
+        System.out.println("Which column to set as PRIMARY KEY?");
+        for (int i = 0; i < columnNames.size(); i++) {
+            System.out.println((i + 1) + ": " + columnNames.get(i));
         }
 
-        columns.add(new Column(columnName, dataType));
-        System.out.println("Column added successfully.");
-    }
-
-    private static String setPrimaryKey(List<Column> columns) {
-        if (columns.isEmpty()) {
-            System.out.println("No columns available to set as primary key.");
-            return null;
-        }
-
-        System.out.println("\nSelect primary key column:");
-        for (int i = 0; i < columns.size(); i++) {
-            System.out.printf("%d. %s%n", i + 1, columns.get(i).name);
-        }
-
-        System.out.print("Enter column number: ");
-        int colNum = scanner.nextInt();
-        scanner.nextLine();  
-        if (colNum < 1 || colNum > columns.size()) {
-            System.out.println("Invalid column number.");
-            return null;
-        }
-
-        String pk = columns.get(colNum - 1).name;
-        System.out.println(pk + " set as primary key.");
-        return pk;
-    }
-
-    private static void saveTable(String tableName, List<Column> columns, String primaryKey) {
-        if (columns.isEmpty()) {
-            System.out.println("Cannot save table with no columns.");
-            return;
-        }
-
-        StringBuilder sql = new StringBuilder("CREATE TABLE " + tableName + " (");
-    
-        for (Column col : columns) {
-            sql.append(col.name).append(" ").append(col.type).append(", ");
-        }
-    
-        if (primaryKey != null) {
-            sql.append("PRIMARY KEY (").append(primaryKey).append(")");
+        int pk = sc.nextInt();
+        if (pk > 0 && pk <= columnDefs.size()) {
+            pk--;
+            columnDefs.set(pk, columnDefs.get(pk) + " PRIMARY KEY");
         } else {
-             
-            sql.setLength(sql.length() - 2);
+            System.out.println("Invalid choice, no primary key set.");
         }
-        
-        sql.append(")");
 
-        try (Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             Statement statement = connection.createStatement()) {
-            
-            statement.executeUpdate(sql.toString());
-            System.out.println("Table '" + tableName + "' created successfully!");
-            
-        } catch (SQLException e) {
-            System.err.println("Error creating table: " + e.getMessage());
-            if (e.getMessage().contains("already exists")) {
-                System.out.println("A table with this name already exists.");
-            }
-        }
+        String joinedColumns = String.join(", ", columnDefs);
+        return "CREATE TABLE " + tableName + " ( " + joinedColumns + " );";
     }
 
-    private static void displayTableColumns() {
-        System.out.println("\nDisplay Table Columns");
-        System.out.print("Enter table name: ");
-        String tableName = scanner.nextLine();
+    private static void showTableColumns(Connection conn, String tableName) {
+        try {
+            DatabaseMetaData dmd = conn.getMetaData();
+            ResultSet tables = dmd.getTables(null, "first", tableName, new String[]{"TABLE"});
 
-        try (Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-            DatabaseMetaData metaData = connection.getMetaData();
-            
-            try (ResultSet columns = metaData.getColumns(null, null, tableName, null)) {
-                System.out.println("\nColumns in table '" + tableName + "':");
-                
-                boolean hasColumns = false;
-                while (columns.next()) {
-                    hasColumns = true;
-                    String columnName = columns.getString("COLUMN_NAME");
-                    String columnType = columns.getString("TYPE_NAME");
-                    System.out.println("- " + columnName + " (" + columnType + ")");
+            if (tables.next()) {
+                ResultSet resultCol = dmd.getColumns(null, "first", tableName, null);
+                System.out.println("Columns in table '" + tableName + "':");
+                while (resultCol.next()) {
+                    String columnName = resultCol.getString("COLUMN_NAME");
+                    System.out.println(columnName);
                 }
-                
-                if (!hasColumns) {
-                    System.out.println("No columns found or table doesn't exist.");
-                }
+                resultCol.close();
+            } else {
+                System.out.println("Table '" + tableName + "' not found!");
             }
+
         } catch (SQLException e) {
-            System.err.println("Error retrieving table information: " + e.getMessage());
-        }
-    }
-
-    private static class Column {
-        String name;
-        String type;
-
-        Column(String name, String type) {
-            this.name = name;
-            this.type = type;
+        	e.printStackTrace();
         }
     }
 }
