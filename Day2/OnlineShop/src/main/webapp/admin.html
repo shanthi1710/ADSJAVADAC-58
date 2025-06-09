@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1 id="welcome-message">Admin Dashboard</h1>
+        <div id="user-info"></div>
+        <a href="logout" class="logout">Logout</a>
+        
+        <script>
+        fetch('user-data')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(user => {
+            if (user && user.role === 'admin') {
+                document.getElementById('welcome-message').textContent = 
+                    `Welcome, Admin ${user.username}!`;
+                document.getElementById('user-info').innerHTML = `
+                    <p>This is the admin dashboard.</p>
+                    <p>Email: ${user.email}</p>
+                `;
+            } else {
+                window.location.href = 'login.html?error=Admin access required';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            window.location.href = 'login.html?error=Session expired';
+        });
+        </script>
+    </div>
+</body>
+</html>

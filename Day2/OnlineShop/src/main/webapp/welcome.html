@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Welcome</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1 id="welcome-message">Welcome!</h1>
+        <div id="user-info"></div>
+        <a href="logout" class="logout">Logout</a>
+        
+        <script>
+            fetch('user-data')
+                .then(response => response.json())
+                .then(user => {
+                    if (user) {
+                        document.getElementById('welcome-message').textContent = 
+                            `Welcome, ${user.username}!`;
+                        document.getElementById('user-info').innerHTML = `
+                            <p>This is your user dashboard.</p>
+                            <p>Email: ${user.email}</p>
+                        `;
+                    } else {
+                        window.location.href = 'login.html';
+                    }
+                })
+                .catch(() => window.location.href = 'login.html');
+        </script>
+    </div>
+</body>
+</html>
